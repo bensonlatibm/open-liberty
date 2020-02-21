@@ -16,9 +16,10 @@ import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 
 @RunWith(Suite.class)
-@SuiteClasses({
-
-                InstallFeatureTest.class, InstallServerTest.class
+@SuiteClasses({ 
+	SudoTest.class
+//	InstallRhelTest.class, InstallUbuntuTest.class
+//                InstallFeatureTest.class, InstallServerTest.class
 
 })
 public class FATSuite {
