@@ -3,23 +3,15 @@ package com.ibm.ws.os.packaging.fat;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
 import java.util.Scanner;
-import java.util.logging.Logger; 
+import java.util.logging.Logger;
 
 import com.ibm.websphere.simplicity.ProgramOutput;
-import com.ibm.websphere.simplicity.RemoteFile;
 import com.ibm.websphere.simplicity.log.Log;
 
 import componenttest.topology.impl.LibertyServer;
@@ -36,19 +28,20 @@ public abstract class InstallUtilityToolTest {
     //Need to ensure JAVA_HOME is set correctly - can't rely on user's environment to be set to the same Java as the build/runtime environment
     protected static Properties _envVars = new Properties();
     public static boolean connectedToRepo = true;
-    public static Logger logger = Logger.getLogger("com.api.jar"); 
+    public static Logger logger = Logger.getLogger("com.api.jar");
     public static String javaHome;
+
     /**
      * Setup the environment.
-     * 
+     *
      * @param svr
-     *            The server instance.
-     * 
+     *                The server instance.
+     *
      * @throws Exception
      */
     protected static void setupEnv() throws Exception {
         final String METHOD_NAME = "setup";
-	server = LibertyServerFactory.getLibertyServer("com.ibm.ws.os.packaging_fat");
+        server = LibertyServerFactory.getLibertyServer("com.ibm.ws.os.packaging_fat");
         installRoot = server.getInstallRoot();
         Log.info(c, METHOD_NAME, "installRoot: " + installRoot);
         javaHome = server.getMachineJavaJDK();
@@ -56,60 +49,65 @@ public abstract class InstallUtilityToolTest {
         cleanDirectories = new ArrayList<String>();
         cleanFiles = new ArrayList<String>();
     }
+
     protected static void createServerEnv() throws Exception {
         String METHOD_NAME = "createServerEnv";
         entering(c, METHOD_NAME);
         File openLib = new File("/var/lib/openliberty");
         File usrDir = new File("/var/lib/openliberty/usr");
-	String echo = "sudo echo 'JAVA_HOME=" +javaHome+ "'> ";
+        String echo = "sudo echo 'JAVA_HOME=" + javaHome + "'> ";
         boolean openLibExists = openLib.exists();
         boolean usrDirExists = usrDir.exists();
         if (openLibExists) {
             logger.info("/var/lib/openliberty found. OpenLiberty is Installed");
-        }
-        else {
+        } else {
             logger.info("OpenLiberty did not install successfully");
         }
 
         File sharedDir = new File("/var/lib/openliberty/usr/shared");
         File serverFile = new File(installRoot + "/server.env");
-        String[] param1s = {"/var/lib/openliberty/usr/shared"};
+        String[] param1s = { "/var/lib/openliberty/usr/shared" };
         ProgramOutput po1 = runCommand("createShared", "sudo mkdir", param1s);
         boolean sharedExists = sharedDir.exists();
         if (sharedExists) {
             logger.info("directory was created successfully");
-        }
-         else {
+        } else {
 
             logger.info("failed trying to create the directory");
         }
-        String[] param2s = {installRoot +  "/server.env"};
-        ProgramOutput po2 = runCommand("createServerFile",echo, param2s);
+        // ensure java_home and parent dirs have +x attribute
+        String[] param1j = { "chmod", "-R", "a+X", "/home" };
+        ProgramOutput po1j = runCommand(METHOD_NAME, "sudo ", param1j);
+        logger.info("sudo RC:" + po.getReturnCode());
+        logger.info("sudo stdout:" + po.getStdOut());
+        logger.info("sudo stderr:" + po.getStdErr());
+
+        String[] param2s = { installRoot + "/server.env" };
+        ProgramOutput po2 = runCommand("createServerFile", echo, param2s);
         boolean serverEnvExists = serverFile.exists();
         if (serverEnvExists) {
             logger.info("file was created successfully");
-        }
-         else {
+        } else {
             logger.info("failed trying to create the file");
         }
-        String[] param6s = {installRoot +  "/server.env /var/lib/openliberty/usr/shared"};
+        String[] param6s = { installRoot + "/server.env /var/lib/openliberty/usr/shared" };
         ProgramOutput po6 = runCommand("moveServerFile", "sudo mv", param6s);
         String[] param3s = { "-R", "openliberty:openliberty", "/var/lib/openliberty/usr/shared" };
         ProgramOutput po3 = runCommand("sharedPerm", "sudo chown", param3s);
         String[] param4s = { "-R", "openliberty:openliberty", "/var/lib/openliberty/usr/shared/server.env" };
-        ProgramOutput po4= runCommand("serverPerm", "sudo chown", param4s);
-        String[] param5s = {"ls -l","/var/lib/openliberty/usr/shared"};
-        ProgramOutput po5= runCommand("listFilesInShared", "sudo", param5s);
+        ProgramOutput po4 = runCommand("serverPerm", "sudo chown", param4s);
+        String[] param5s = { "ls -l", "/var/lib/openliberty/usr/shared" };
+        ProgramOutput po5 = runCommand("listFilesInShared", "sudo", param5s);
         String output = po5.getStdout();
         logger.info(output);
-	String[] param7s = {javaHome+ "/bin/java"};
-        ProgramOutput po7= runCommand("listFilesInJava", "ls -l", param7s);
+        String[] param7s = { javaHome + "/bin/java" };
+        ProgramOutput po7 = runCommand("listFilesInJava", "ls -l", param7s);
         String output2 = po7.getStdout();
         logger.info(output2);
-        String[] param8s = {"777", javaHome+ "/bin/java"};
-        ProgramOutput po8= runCommand("changeJavaPerm", "chmod", param8s);
-        String[] param9s = {javaHome+ "/bin/java"};
-        ProgramOutput po9= runCommand("listFilesInJava", "ls -l", param9s);
+//        String[] param8s = {"777", javaHome+ "/bin/java"};
+//        ProgramOutput po8= runCommand("changeJavaPerm", "chmod", param8s);
+        String[] param9s = { javaHome + "/bin/java" };
+        ProgramOutput po9 = runCommand("listFilesInJava", "ls -l", param9s);
         String output3 = po9.getStdout();
         logger.info(output3);
         exiting(c, METHOD_NAME);
@@ -125,7 +123,7 @@ public abstract class InstallUtilityToolTest {
 
     /**
      * This method removes all the testing artifacts from the server directories.
-     * 
+     *
      * @throws Exception
      */
     protected static void cleanupEnv() throws Exception {
@@ -145,9 +143,9 @@ public abstract class InstallUtilityToolTest {
     }
 
     protected static boolean isLinuxUbuntu() throws Exception {
-        if (isLinux){
+        if (isLinux) {
             String content = new Scanner(new File("/etc/os-release")).useDelimiter("\\Z").next();
-            if (content.contains("ubuntu")){
+            if (content.contains("ubuntu")) {
                 return true;
             }
         }
@@ -155,9 +153,9 @@ public abstract class InstallUtilityToolTest {
     }
 
     protected static boolean isLinuxRhel() throws Exception {
-        if (isLinux){
+        if (isLinux) {
             String content = new Scanner(new File("/etc/os-release")).useDelimiter("\\Z").next();
-            if (content.contains("rhel")){
+            if (content.contains("rhel")) {
                 return true;
             }
         }
@@ -171,7 +169,7 @@ public abstract class InstallUtilityToolTest {
         }
         Log.info(c, testcase,
                  "command: " + command + " " + args);
-        ProgramOutput po = server.getMachine().execute(command, params, installRoot,_envVars);
+        ProgramOutput po = server.getMachine().execute(command, params, installRoot, _envVars);
         Log.info(c, testcase, po.getStdout());
         Log.info(c, testcase, command + " command exit code: " + po.getReturnCode());
         return po;
