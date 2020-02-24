@@ -78,9 +78,9 @@ public abstract class InstallUtilityToolTest {
         // ensure java_home and parent dirs have +x attribute
         String[] param1j = { "chmod", "-R", "a+X", "/home" };
         ProgramOutput po1j = runCommand(METHOD_NAME, "sudo ", param1j);
-        logger.info("sudo RC:" + po.getReturnCode());
-        logger.info("sudo stdout:" + po.getStdOut());
-        logger.info("sudo stderr:" + po.getStdErr());
+        logger.info("sudo RC:" + po1j.getReturnCode());
+//        logger.info("sudo stdout:" + po1j.getStdOut());
+//        logger.info("sudo stderr:" + po1j.getStdErr());
 
         String[] param2s = { installRoot + "/server.env" };
         ProgramOutput po2 = runCommand("createServerFile", echo, param2s);
