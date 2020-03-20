@@ -97,8 +97,8 @@ public class InstallPackagesTest extends InstallPackagesToolTest {
         result2 = checkUserGroupOwnership(METHOD_NAME, "openliberty", "openliberty", "/var/log/openliberty");
         Log.info(c, METHOD_NAME, "/var/log/openliberty Result:" + result2);
 
-//        result3 = checkUserGroupOwnership(METHOD_NAME, "root", "root", "/opt/ol");
-//        Log.info(c, METHOD_NAME, "/opt/ol Result:" + result2);
+        result3 = checkUserGroupOwnership(METHOD_NAME, "root", "root", "/opt/ol");
+        Log.info(c, METHOD_NAME, "/opt/ol Result:" + result2);
 
         //Uninstall package
         ProgramOutput po6 = uninstallPackage(METHOD_NAME, packageExt);
