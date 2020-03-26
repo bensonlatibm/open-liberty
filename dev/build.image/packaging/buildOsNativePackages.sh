@@ -34,29 +34,51 @@ if [ -z "$GPG_PASS" ]
 then
      echo "GPG PASSPHRASE is undefined.  skip signing of rpm/deb packages"
 else 
-     echo "creating passphrase file"
+#     echo "creating passphrase file"
      echo "${GPG_PASS}" > $HOME/.gnupg/pp.txt
 fi
 
 #build rpm
-#cd rpmbuild && rpmbuild -ba SPECS/openliberty.spec
 echo "Building openliberty.rpm"
 ./buildRPM.sh ${driverVer}
 
-echo "Building openliberty.deb"
 #build deb
-#cd ../debuild/openliberty/debian && debuild -d -b -us -uc
+echo "Building openliberty.deb"
 ./buildDEB.sh ${driverVer}
 
-echo "removing passphrase file"
+#echo "removing passphrase file"
 rm -rf $HOME/.gnupg/pp.txt
-#if [ -f "./debuild/*.deb" -a -f "./rpmbuild/RPMS/noarch/*.rpm" ]; then
+
+#Check that openliberty .deb and .rpm were actually created
 if [ -f "./debuild/*.debfail" -a -f "./rpmbuild/RPMS/noarch/*.rpm" ]; then
-   echo "deb & rpm exist"
+#   echo "openliberty .deb & openliberty .rpm exist"
    exit 0
 else
    echo "There was a problem building the .rpm and/or .deb packages."
-   test -f ./debuild/*.deb && echo ".deb was built"
-   test -f ./rpmbuild/RPMS/noarch/*.rpm &&  echo ".rpm was built"
+
+   # check for existence of openliberty.deb
+   if [ -f ./debuild/*.deb ]; then
+      echo "openliberty .deb was built"
+   else
+      echo "openliberty .deb was not built successfully"
+      which debuild
+      if [ "$?" -ne "0" ]; then
+         echo "debuild command is not installed on this system"
+      fi
+   fi
+
+   # check for existence of openliberty.rpm
+   if [ -f ./rpmbuild/RPMS/noarch/*.rpm  ]; then
+      echo "openliberty .rpm was built"
+   else
+      echo "openliberty .deb was not built successfully"
+      which rpmbuild
+      if [ "$?" -ne "0" ]; then
+         echo "rpmbuild command is not installed on this system"
+	 echo
+	 echo "to install the rpmbuild command on Ubuntu, run the following command:"
+         echo "    sudo apt-get install -y rpm devscripts build-essential fakeroot lintian debhelper"
+      fi
+   fi
    exit 1
 fi
