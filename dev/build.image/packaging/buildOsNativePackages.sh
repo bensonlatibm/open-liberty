@@ -50,3 +50,13 @@ echo "Building openliberty.deb"
 
 echo "removing passphrase file"
 rm -rf $HOME/.gnupg/pp.txt
+#if [ -f "./debuild/*.deb" -a -f "./rpmbuild/RPMS/noarch/*.rpm" ]; then
+if [ -f "./debuild/*.debfail" -a -f "./rpmbuild/RPMS/noarch/*.rpm" ]; then
+   echo "deb & rpm exist"
+   exit 0
+else
+   echo "There was a problem building the .rpm and/or .deb packages."
+   test -f ./debuild/*.deb && echo ".deb was built"
+   test -f ./rpmbuild/RPMS/noarch/*.rpm &&  echo ".rpm was built"
+   exit 1
+fi
