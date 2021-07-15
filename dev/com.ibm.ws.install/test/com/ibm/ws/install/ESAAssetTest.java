@@ -84,6 +84,7 @@ public class ESAAssetTest {
         final String m = "testESAAsset";
         File srcFile = new File("publish/massiveRepo/features/usertest.with.ibm.license.esa");
         File esaFile = new File("build/unittest/tmp/usertest.with.ibm.license_temp.esa");
+        InputStream is = null;
         new InputStreamFileWriter(srcFile.getCanonicalFile().toURI().toURL().openConnection().getInputStream()).writeToFile(esaFile);
 
         try {
@@ -105,7 +106,7 @@ public class ESAAssetTest {
             ZipEntry entry = esaAsset.getEntry("OSGI-INF/SUBSYSTEM.MF");
             assertEquals("ESAAsset.getEntry().getName()", "OSGI-INF/SUBSYSTEM.MF", entry.getName());
 
-            InputStream is = esaAsset.getInputStream(entry);
+            is = esaAsset.getInputStream(entry);
             byte[] buffer = new byte[28];
             is.read(buffer);
             assertEquals("ESAAsset.getInputStream()", "Subsystem-ManifestVersion: 1", new String(buffer));
@@ -142,6 +143,8 @@ public class ESAAssetTest {
 
         } catch (Throwable t) {
             outputMgr.failWithThrowable(m, t);
+        } finally {
+            is.close();
         }
     }
 }

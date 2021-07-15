@@ -87,8 +87,12 @@ public class ESAVirtualAsset extends ESABaseAsset {
             if (entry == null) {
                 entry = getEntry(this.featureName + "/OSGI-INF/l10n/subsystem.properties");
             }
-            if (entry != null)
-                return new PropertyResourceBundle(getInputStream(entry));
+            if (entry != null) {
+                InputStream is = getInputStream(entry);
+                PropertyResourceBundle pb = new PropertyResourceBundle(is);
+                is.close();
+                return pb;
+            }
         } catch (IOException e) {
             //TODO: log the exception
         }
@@ -103,6 +107,7 @@ public class ESAVirtualAsset extends ESABaseAsset {
                 Properties p = new Properties();
                 InputStream inStream = getInputStream(entry);
                 p.load(inStream);
+                inStream.close();
                 String size = p.getProperty(this.featureName + ".size");
                 return Long.valueOf(size);
             }

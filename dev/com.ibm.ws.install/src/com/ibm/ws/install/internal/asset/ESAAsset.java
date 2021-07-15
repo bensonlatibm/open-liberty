@@ -12,6 +12,7 @@ package com.ibm.ws.install.internal.asset;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -63,13 +64,18 @@ public class ESAAsset extends ESABaseAsset implements FeatureAsset, FeatureColle
 
     @Override
     protected ResourceBundle getResourceBundle(Locale locale) {
+
         try {
             ZipEntry entry = getEntry("OSGI-INF/l10n/subsystem_" + locale.getLanguage() + ".properties");
             if (entry == null) {
                 entry = getEntry("OSGI-INF/l10n/subsystem.properties");
             }
-            if (entry != null)
-                return new PropertyResourceBundle(getInputStream(entry));
+            if (entry != null) {
+                InputStream is = getInputStream(entry);
+                PropertyResourceBundle pb = new PropertyResourceBundle(is);
+                is.close();
+                return pb;
+            }
         } catch (IOException e) {
             //TODO: log the exception
         }

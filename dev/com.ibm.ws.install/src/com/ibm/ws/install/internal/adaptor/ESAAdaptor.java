@@ -157,7 +157,9 @@ public class ESAAdaptor extends ArchiveAdaptor {
         Properties checksumOutput = null;
         if (checksumEntry != null) {
             checksumInput = new Properties();
-            checksumInput.load(featureAsset.getInputStream(checksumEntry));
+            InputStream is = featureAsset.getInputStream(checksumEntry);
+            checksumInput.load(is);
+            is.close();
             checksumOutput = new Properties();
         }
 

@@ -169,8 +169,12 @@ public class ESABaseAsset extends InstallAsset implements FeatureAsset, FeatureC
             if (entry == null) {
                 entry = getEntry("OSGI-INF/l10n/subsystem.properties");
             }
-            if (entry != null)
-                return new PropertyResourceBundle(getInputStream(entry));
+            if (entry != null) {
+                InputStream is = getInputStream(entry);
+                PropertyResourceBundle pb = new PropertyResourceBundle(is);
+                is.close();
+                return pb;
+            }
         } catch (IOException e) {
             //TODO: log the exception
         }
