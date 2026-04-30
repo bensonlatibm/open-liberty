@@ -1173,6 +1173,13 @@ public class InstallKernelMap implements Map {
                 noProxyHosts = noProxyHosts.replace(",", "|");
                 System.setProperty("http.nonProxyHosts", noProxyHosts);
             }
+            // Set AES encryption key system property if available from environment
+            if (envMap.get("WLP_AES_ENCRYPTION_KEY") != null) {
+                System.setProperty("wlp.aes.encryption.key", (String) envMap.get("WLP_AES_ENCRYPTION_KEY"));
+                System.setProperty("WLP_AES_ENCRYPTION_KEY", (String) envMap.get("WLP_AES_ENCRYPTION_KEY"));
+
+                logger.fine("wlp.aes.encryption.key set from WLP_AES_ENCRYPTION_KEY environment variable");
+            }
             logger.fine("http.proxyHost " + System.getProperty("http.proxyHost"));
             logger.fine("https.proxyHost " + System.getProperty("https.proxyHost"));
             logger.fine("proxy exclusion list: " + System.getProperty("http.nonProxyHosts"));
@@ -2004,6 +2011,10 @@ public class InstallKernelMap implements Map {
         envMapRet.put("FEATURE_LOCAL_REPO", System.getenv("FEATURE_LOCAL_REPO"));
 
         envMapRet.put("FEATURE_VERIFY", System.getenv("FEATURE_VERIFY"));
+
+        // Add AES encryption key environment variables for password decryption
+        envMapRet.put("wlp.aes.encryption.key", System.getenv("WLP_AES_ENCRYPTION_KEY"));
+        envMapRet.put("WLP_AES_ENCRYPTION_KEY", System.getenv("WLP_AES_ENCRYPTION_KEY"));
 
         //search through the properties file to look for overrides if they exist
         //TODO remove? - Do we use featureUtility.env ?
