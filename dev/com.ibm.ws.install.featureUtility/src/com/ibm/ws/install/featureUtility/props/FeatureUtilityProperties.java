@@ -33,6 +33,7 @@ import com.ibm.ws.install.InstallException;
 import com.ibm.ws.install.internal.InstallLogUtils;
 import com.ibm.ws.install.internal.MavenRepository;
 import com.ibm.ws.kernel.boot.cmdline.Utils;
+import com.ibm.ws.crypto.util.AESKeyManager;
 
 public class FeatureUtilityProperties {
 
@@ -49,6 +50,13 @@ public class FeatureUtilityProperties {
     private static boolean didFileParse;
 
     static {
+        // Initialize the KeyStringResolver BEFORE loading properties
+        // This ensures that any AES-encrypted passwords in featureUtility.properties
+        // can be properly decrypted using encryption keys from bootstrap.properties,
+        // server.env, or environment variables
+        FeatureUtilityKeyResolver keyResolver = new FeatureUtilityKeyResolver();
+        AESKeyManager.setKeyStringResolver(keyResolver);
+        
         Properties properties = null;
         try {
             properties = loadProperties();
