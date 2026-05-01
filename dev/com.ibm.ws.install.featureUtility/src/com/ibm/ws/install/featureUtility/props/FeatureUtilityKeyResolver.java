@@ -51,37 +51,65 @@ public class FeatureUtilityKeyResolver implements KeyStringResolver {
      * 3. server.env (if server name is provided)
      */
     public FeatureUtilityKeyResolver() {
-        this(null);
+        this(null, null);
+    }
+
+    /**
+     * Creates a new FeatureUtilityKeyResolver with featureUtility.properties.
+     * Loads encryption key variables from:
+     * 1. Environment variables
+     * 2. featureUtility.properties (if provided)
+     * 3. bootstrap.properties (if server name is provided)
+     * 4. server.env (if server name is provided)
+     *
+     * @param featureUtilityProps the featureUtility.properties to load encryption keys from,
+     *                            or null to skip loading from featureUtility.properties
+     */
+    public FeatureUtilityKeyResolver(Properties featureUtilityProps) {
+        this(null, featureUtilityProps);
     }
 
     /**
      * Creates a new FeatureUtilityKeyResolver for a specific server.
-     * 
+     *
      * @param serverName the server name to load bootstrap.properties and server.env from,
      *                   or null to only use environment variables
+     * @param featureUtilityProps the featureUtility.properties to load encryption keys from,
+     *                            or null to skip loading from featureUtility.properties
      */
-    public FeatureUtilityKeyResolver(String serverName) {
+    public FeatureUtilityKeyResolver(String serverName, Properties featureUtilityProps) {
         this.resolvedVariables = new HashMap<>();
-        loadVariables(serverName);
+        loadVariables(serverName, featureUtilityProps);
     }
 
     /**
      * Loads encryption key variables from various sources.
-     * 
+     *
      * @param serverName the server name, or null
+     * @param featureUtilityProps the featureUtility.properties, or null
      */
-    private void loadVariables(String serverName) {
+    private void loadVariables(String serverName, Properties featureUtilityProps) {
         // 1. Load from environment variables (highest priority)
         loadFromEnvironment();
         
-        // 2. Load from bootstrap.properties if server name is provided
+        // 2. Load from featureUtility.properties if provided
+        if (featureUtilityProps != null) {
+            loadFromFeatureUtilityProperties(featureUtilityProps);
+        }
+        
+        // 3. Load from bootstrap.properties if server name is provided
         if (serverName != null && !serverName.isEmpty()) {
             loadFromBootstrapProperties(serverName);
             loadFromServerEnv(serverName);
         }
         
-        logger.log(Level.FINE, "FeatureUtilityKeyResolver initialized with {0} variables", 
+        logger.log(Level.INFO, "FeatureUtilityKeyResolver initialized with {0} variables",
                    resolvedVariables.size());
+        if (logger.isLoggable(Level.INFO)) {
+            for (String key : resolvedVariables.keySet()) {
+                logger.log(Level.INFO, "  Loaded variable: {0}", key);
+            }
+        }
     }
 
     /**
@@ -100,7 +128,30 @@ public class FeatureUtilityKeyResolver implements KeyStringResolver {
             String value = System.getenv(envVar);
             if (value != null && !value.isEmpty()) {
                 resolvedVariables.put(envVar, value);
-                logger.log(Level.FINE, "Loaded encryption key variable from environment: {0}", envVar);
+                logger.log(Level.INFO, "Loaded encryption key variable from environment: {0} (length: {1})",
+                          new Object[]{envVar, value.length()});
+            }
+        }
+    }
+
+    /**
+     * Loads encryption key variables from featureUtility.properties.
+     *
+     * @param featureUtilityProps the featureUtility.properties
+     */
+    private void loadFromFeatureUtilityProperties(Properties featureUtilityProps) {
+        // Check for encryption key properties
+        String[] keyProps = {
+            "wlp.password.encryption.key",
+            "wlp.aes.encryption.key"
+        };
+        
+        for (String key : keyProps) {
+            String value = featureUtilityProps.getProperty(key);
+            if (value != null && !value.isEmpty()) {
+                resolvedVariables.put(key, value);
+                logger.log(Level.INFO, "Loaded encryption key from featureUtility.properties: {0} (length: {1})",
+                          new Object[]{key, value.length()});
             }
         }
     }
@@ -131,7 +182,8 @@ public class FeatureUtilityKeyResolver implements KeyStringResolver {
                 if (keyStr.contains("encryption.key")) {
                     String value = props.getProperty(keyStr);
                     resolvedVariables.put(keyStr, value);
-                    logger.log(Level.FINE, "Loaded encryption key from bootstrap.properties: {0}", keyStr);
+                    logger.log(Level.INFO, "Loaded encryption key from bootstrap.properties: {0} (length: {1})",
+                              new Object[]{keyStr, value.length()});
                 }
             }
         } catch (FileNotFoundException e) {
@@ -167,7 +219,8 @@ public class FeatureUtilityKeyResolver implements KeyStringResolver {
                 if (keyStr.contains("encryption.key")) {
                     String value = props.getProperty(keyStr);
                     resolvedVariables.put(keyStr, value);
-                    logger.log(Level.FINE, "Loaded encryption key from server.env: {0}", keyStr);
+                    logger.log(Level.INFO, "Loaded encryption key from server.env: {0} (length: {1})",
+                              new Object[]{keyStr, value.length()});
                 }
             }
         } catch (FileNotFoundException e) {
@@ -188,8 +241,10 @@ public class FeatureUtilityKeyResolver implements KeyStringResolver {
      */
     @Override
     public char[] getKey(String keyString) {
+        logger.log(Level.INFO, "FeatureUtilityKeyResolver.getKey() called with keyString: {0}", keyString);
+        
         if (keyString == null || keyString.isEmpty()) {
-            logger.log(Level.FINE, "Null or empty key string provided");
+            logger.log(Level.WARNING, "Null or empty key string provided to resolver");
             return new char[0];
         }
         
@@ -197,19 +252,22 @@ public class FeatureUtilityKeyResolver implements KeyStringResolver {
         Matcher matcher = VARIABLE_PATTERN.matcher(keyString);
         if (matcher.find()) {
             String variableName = matcher.group(1);
+            logger.log(Level.INFO, "Attempting to resolve variable: {0}", variableName);
             String resolvedValue = resolveVariable(variableName);
             
             if (resolvedValue != null) {
-                logger.log(Level.FINE, "Resolved variable {0} to encryption key", variableName);
+                logger.log(Level.INFO, "Successfully resolved variable {0} to encryption key (length: {1})",
+                          new Object[]{variableName, resolvedValue.length()});
                 return resolvedValue.toCharArray();
             } else {
-                logger.log(Level.WARNING, "Could not resolve variable: {0}", variableName);
+                logger.log(Level.WARNING, "Could not resolve variable: {0}. Returning original string.", variableName);
                 // Return the original string if we can't resolve it
                 return keyString.toCharArray();
             }
         }
         
         // No variable reference, return as-is
+        logger.log(Level.INFO, "No variable reference found. Using keyString directly (length: {0})", keyString.length());
         return keyString.toCharArray();
     }
 

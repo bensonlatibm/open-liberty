@@ -40,7 +40,8 @@ public class FeatureUtilityProperties {
     private final static String FILEPATH_EXT = "/etc/featureUtility.properties";
     private final static String FeatureVerifyQualifier = "feature.verify";
     private final static Set<String> DEFINED_OPTIONS = new HashSet<>(Arrays.asList("proxyHost", "proxyPort",
-	    "proxyUser", "proxyPassword", "http.nonProxyHosts", "featureLocalRepo", FeatureVerifyQualifier));
+     "proxyUser", "proxyPassword", "http.nonProxyHosts", "featureLocalRepo", FeatureVerifyQualifier,
+     "wlp.password.encryption.key", "wlp.aes.encryption.key"));
     private static Map<String, String> definedVariables = new HashMap<>();
     private static List<MavenRepository> repositoryList = new ArrayList<>();
     private static List<String> bomIdList = new ArrayList<>();
@@ -50,16 +51,19 @@ public class FeatureUtilityProperties {
     private static boolean didFileParse;
 
     static {
-        // Initialize the KeyStringResolver BEFORE loading properties
-        // This ensures that any AES-encrypted passwords in featureUtility.properties
-        // can be properly decrypted using encryption keys from bootstrap.properties,
-        // server.env, or environment variables
-        FeatureUtilityKeyResolver keyResolver = new FeatureUtilityKeyResolver();
-        AESKeyManager.setKeyStringResolver(keyResolver);
-        
+        // Load properties first, then initialize the KeyStringResolver
+        // This allows the resolver to read encryption keys from featureUtility.properties
+        // in addition to bootstrap.properties, server.env, and environment variables
         Properties properties = null;
         try {
             properties = loadProperties();
+            
+            // Initialize the KeyStringResolver AFTER loading properties but BEFORE parsing
+            // This ensures that any AES-encrypted passwords in featureUtility.properties
+            // can be properly decrypted using encryption keys from the same file
+            FeatureUtilityKeyResolver keyResolver = new FeatureUtilityKeyResolver(properties);
+            AESKeyManager.setKeyStringResolver(keyResolver);
+            
             didFileParse = parseProperties(properties);
         } catch (InstallException e) {
             // log here that could not be found.
